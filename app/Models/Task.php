@@ -11,7 +11,11 @@ class Task extends Model
      * Mass assigning the data
      */
     protected $fillable = [
-        'title', 'description', 'priority', 'date'
+        'title',
+        'description',
+        'priority',
+        'date',
+        'image'
     ];
 
     /**

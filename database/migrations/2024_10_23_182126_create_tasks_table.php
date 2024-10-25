@@ -18,6 +18,7 @@ return new class extends Migration
             $table->text('description');
             $table->string('priority');
             $table->date('date');
+            $table->string('image')->nullable();
             $table->timestamps();
         });
     }

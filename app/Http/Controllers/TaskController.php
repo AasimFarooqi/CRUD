@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Task;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Gate;
 
@@ -32,14 +33,24 @@ class TaskController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
+        $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|max:450',
             'priority' => 'required|string|max:6',
-            'date' => 'required|date'
+            'date' => 'required|date',
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $request->user()->tasks()->create($validated);
+        $input = $request->all();
+
+        if ($image = $request->file('image')) {
+            $destinationPath = 'images';
+            $profileImage = date('YmdHis') . "." . $image->getClientOriginalExtension();
+            $image->move($destinationPath, $profileImage);
+            $input['image'] = "$profileImage";
+        }
+
+        $request->user()->tasks()->create($input);
 
         return redirect(route('tasks.index'));
     }
@@ -71,14 +82,31 @@ class TaskController extends Controller
     {
         Gate::authorize('update', $task);
 
-        $validated = $request->validate([
+        $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|max:450',
             'priority' => 'required|string|max:6',
-            'date' => 'required|date'
+            'date' => 'required|date',
+            'image' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $task->update($validated);
+        $input = $request->except('image');
+
+        if ($request->hasFile('image')) {
+
+            if ($task->image && Storage::disk('public2')->exists($task->image)) {
+                Storage::disk('public2')->delete($task->image);
+            }
+
+            $image = $request->file('image');
+            $destinationPath = 'images';
+            $profileImage = date('YmdHis') . "." . $image->getClientOriginalExtension();
+            $image->move($destinationPath, $profileImage);
+            $input['image'] = $profileImage;
+        }
+
+
+        $task->update($input);
 
         return redirect(route('tasks.index'));
     }
@@ -86,9 +114,13 @@ class TaskController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Task $task)
+    public function destroy(Task $task): RedirectResponse
     {
         Gate::authorize('delete', $task);
+
+        if ($task->image && Storage::disk('public2')->exists($task->image)) {
+            Storage::disk('public2')->delete($task->image);
+        }
 
         $task->delete();
 

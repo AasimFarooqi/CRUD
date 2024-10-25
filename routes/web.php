@@ -22,4 +22,4 @@ Route::resource('tasks', TaskController::class)
     ->only(['index', 'store', 'edit', 'update', 'destroy'])
     ->middleware('auth');
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
